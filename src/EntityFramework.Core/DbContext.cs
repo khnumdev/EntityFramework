@@ -51,6 +51,7 @@ namespace Microsoft.Data.Entity
         private LazyRef<IDbContextServices> _contextServices;
         private LazyRef<IDbSetInitializer> _setInitializer;
         private LazyRef<ChangeTracker> _changeTracker;
+        private LazyRef<IInternalConcurrencyDetector> _concurrencyDetector;
         private ILogger _logger;
 
         private bool _initializing;
@@ -148,6 +149,7 @@ namespace Microsoft.Data.Entity
             _contextServices = new LazyRef<IDbContextServices>(() => InitializeServices(serviceProvider, options));
             _setInitializer = new LazyRef<IDbSetInitializer>(() => ServiceProvider.GetRequiredService<IDbSetInitializer>());
             _changeTracker = new LazyRef<ChangeTracker>(() => ServiceProvider.GetRequiredService<IChangeTrackerFactory>().Create());
+            _concurrencyDetector = new LazyRef<IInternalConcurrencyDetector>(() => ServiceProvider.GetRequiredService<IInternalConcurrencyDetector>());
         }
 
         private DbContextOptions GetOptions(IServiceProvider serviceProvider)
@@ -309,23 +311,32 @@ namespace Microsoft.Data.Entity
         [DebuggerStepThrough]
         public virtual int SaveChanges(bool acceptAllChangesOnSuccess)
         {
-            var stateManager = GetStateManager();
-
-            TryDetectChanges(stateManager);
+            _concurrencyDetector.Value.EnterCriticalSection();
 
             try
             {
-                return stateManager.SaveChanges(acceptAllChangesOnSuccess);
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(
-                    CoreLoggingEventId.DatabaseError,
-                    () => new DatabaseErrorLogState(GetType()),
-                    exception,
-                    e => CoreStrings.LogExceptionDuringSaveChanges(Environment.NewLine, e));
+                var stateManager = GetStateManager();
 
-                throw;
+                TryDetectChanges(stateManager);
+
+                try
+                {
+                    return stateManager.SaveChanges(acceptAllChangesOnSuccess);
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(
+                        CoreLoggingEventId.DatabaseError,
+                        () => new DatabaseErrorLogState(GetType()),
+                        exception,
+                        e => CoreStrings.LogExceptionDuringSaveChanges(Environment.NewLine, e));
+
+                    throw;
+                }
+            }
+            finally
+            {
+                _concurrencyDetector.Value.ExitCriticalSection();
             }
         }
 
@@ -385,26 +396,35 @@ namespace Microsoft.Data.Entity
         public virtual async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess,
             CancellationToken cancellationToken = default(CancellationToken))
         {
-            var stateManager = GetStateManager();
-
-            if (ChangeTracker.AutoDetectChangesEnabled)
-            {
-                GetChangeDetector().DetectChanges(stateManager);
-            }
+            _concurrencyDetector.Value.EnterCriticalSection();
 
             try
             {
-                return await stateManager.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
-            }
-            catch (Exception exception)
-            {
-                _logger.LogError(
-                    CoreLoggingEventId.DatabaseError,
-                    () => new DatabaseErrorLogState(GetType()),
-                    exception,
-                    e => CoreStrings.LogExceptionDuringSaveChanges(Environment.NewLine, e));
+                var stateManager = GetStateManager();
 
-                throw;
+                if (ChangeTracker.AutoDetectChangesEnabled)
+                {
+                    GetChangeDetector().DetectChanges(stateManager);
+                }
+
+                try
+                {
+                    return await stateManager.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    _logger.LogError(
+                        CoreLoggingEventId.DatabaseError,
+                        () => new DatabaseErrorLogState(GetType()),
+                        exception,
+                        e => CoreStrings.LogExceptionDuringSaveChanges(Environment.NewLine, e));
+
+                    throw;
+                }
+            }
+            finally
+            {
+                _concurrencyDetector.Value.ExitCriticalSection();
             }
         }
 

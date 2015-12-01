@@ -94,6 +94,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddScoped<IKeyPropagator, KeyPropagator>()
                 .AddScoped<INavigationFixer, NavigationFixer>()
                 .AddScoped<IStateManager, StateManager>()
+                .AddScoped<IInternalConcurrencyDetector, InternalConcurrencyDetector>()
                 .AddScoped<IInternalEntityEntryFactory, InternalEntityEntryFactory>()
                 .AddScoped<IInternalEntityEntryNotifier, InternalEntityEntryNotifier>()
                 .AddScoped<IInternalEntityEntrySubscriber, InternalEntityEntrySubscriber>()

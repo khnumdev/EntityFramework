@@ -43,6 +43,7 @@ namespace Microsoft.Data.Entity.Query.Internal
         private readonly ISensitiveDataLogger _logger;
         private readonly MethodInfoBasedNodeTypeRegistry _methodInfoBasedNodeTypeRegistry;
         private readonly Type _contextType;
+        private readonly IInternalConcurrencyDetector _concurrencyDetector;
 
         private INodeTypeProvider _nodeTypeProvider;
 
@@ -53,7 +54,8 @@ namespace Microsoft.Data.Entity.Query.Internal
             [NotNull] IDatabase database,
             [NotNull] ISensitiveDataLogger<QueryCompiler> logger,
             [NotNull] MethodInfoBasedNodeTypeRegistry methodInfoBasedNodeTypeRegistry,
-            [NotNull] DbContext context)
+            [NotNull] DbContext context,
+            [NotNull] IInternalConcurrencyDetector concurrencyDetector)
         {
             Check.NotNull(queryContextFactory, nameof(queryContextFactory));
             Check.NotNull(compiledQueryCache, nameof(compiledQueryCache));
@@ -61,6 +63,7 @@ namespace Microsoft.Data.Entity.Query.Internal
             Check.NotNull(database, nameof(database));
             Check.NotNull(logger, nameof(logger));
             Check.NotNull(context, nameof(context));
+            Check.NotNull(concurrencyDetector, nameof(concurrencyDetector));
 
             _queryContextFactory = queryContextFactory;
             _compiledQueryCache = compiledQueryCache;
@@ -69,6 +72,7 @@ namespace Microsoft.Data.Entity.Query.Internal
             _logger = logger;
             _methodInfoBasedNodeTypeRegistry = methodInfoBasedNodeTypeRegistry;
             _contextType = context.GetType();
+            _concurrencyDetector = concurrencyDetector;
         }
 
         protected virtual IDatabase Database => _database;
@@ -77,48 +81,75 @@ namespace Microsoft.Data.Entity.Query.Internal
         {
             Check.NotNull(query, nameof(query));
 
-            var queryContext = _queryContextFactory.Create();
+            _concurrencyDetector.EnterCriticalSection();
 
-            query = ExtractParameters(query, queryContext);
+            try
+            {
+                var queryContext = _queryContextFactory.Create();
 
-            return CompileQuery<TResult>(query)(queryContext);
+                query = ExtractParameters(query, queryContext);
+
+                return CompileQuery<TResult>(query)(queryContext);
+            }
+            finally
+            {
+                _concurrencyDetector.ExitCriticalSection();
+            }
         }
 
         public virtual IAsyncEnumerable<TResult> ExecuteAsync<TResult>(Expression query)
         {
             Check.NotNull(query, nameof(query));
 
-            var queryContext = _queryContextFactory.Create();
+            _concurrencyDetector.EnterCriticalSection();
 
-            query = ExtractParameters(query, queryContext);
+            try
+            {
+                var queryContext = _queryContextFactory.Create();
 
-            return CompileAsyncQuery<TResult>(query)(queryContext);
+                query = ExtractParameters(query, queryContext);
+
+                return CompileAsyncQuery<TResult>(query)(queryContext);
+            }
+            finally
+            {
+                _concurrencyDetector.ExitCriticalSection();
+            }
         }
 
         public virtual Task<TResult> ExecuteAsync<TResult>(Expression query, CancellationToken cancellationToken)
         {
             Check.NotNull(query, nameof(query));
 
-            var queryContext = _queryContextFactory.Create();
-
-            queryContext.CancellationToken = cancellationToken;
-
-            query = ExtractParameters(query, queryContext);
+            _concurrencyDetector.EnterCriticalSection();
 
             try
             {
-                return CompileAsyncQuery<TResult>(query)(queryContext).First(cancellationToken);
-            }
-            catch (Exception exception)
-            {
-                _logger
-                    .LogError(
-                        CoreLoggingEventId.DatabaseError,
-                        () => new DatabaseErrorLogState(_contextType),
-                        exception,
-                        e => CoreStrings.LogExceptionDuringQueryIteration(Environment.NewLine, e));
+                var queryContext = _queryContextFactory.Create();
 
-                throw;
+                queryContext.CancellationToken = cancellationToken;
+
+                query = ExtractParameters(query, queryContext);
+
+                try
+                {
+                    return CompileAsyncQuery<TResult>(query)(queryContext).First(cancellationToken);
+                }
+                catch (Exception exception)
+                {
+                    _logger
+                        .LogError(
+                            CoreLoggingEventId.DatabaseError,
+                            () => new DatabaseErrorLogState(_contextType),
+                            exception,
+                            e => CoreStrings.LogExceptionDuringQueryIteration(Environment.NewLine, e));
+
+                    throw;
+                }
+            }
+            finally
+            {
+                _concurrencyDetector.ExitCriticalSection();
             }
         }
 
