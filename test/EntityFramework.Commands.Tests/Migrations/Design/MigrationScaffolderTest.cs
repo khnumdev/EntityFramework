@@ -126,6 +126,7 @@ namespace Microsoft.Data.Entity.Migrations.Design
             public IResultOperatorHandler ResultOperatorHandler => null;
             public IEntityQueryableExpressionVisitorFactory EntityQueryableExpressionVisitorFactory => null;
             public IProjectionExpressionVisitorFactory ProjectionExpressionVisitorFactory => null;
+            public INavigationRewritingExpressionVisitorFactory NavigationRewritingExpressionVisitorFactory => null;
         }
     }
 }

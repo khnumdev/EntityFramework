@@ -72,6 +72,7 @@
     <Compile Include="..\Shared\SharedTypeExtensions.cs">
       <Link>Utilities\SharedTypeExtensions.cs</Link>
     </Compile>
+    <Compile Include="Query\ExpressionVisitors\Internal\InMemoryNavigationRewritingVisitor.cs" />
     <Compile Include="Query\Internal\IMaterializerFactory.cs" />
     <Compile Include="Query\Internal\InMemoryQueryContext.cs" />
     <Compile Include="Query\Internal\InMemoryQueryContextFactory.cs" />

@@ -140,6 +140,17 @@ FROM [Level1] AS [e1]
 INNER JOIN [Level2] AS [e2] ON [e1].[Id] = [e2].[OneToOne_Optional_PK_InverseId]", Sql);
         }
 
+
+        public override void Navigation_translated_to_FK_comparison()
+        {
+            base.Navigation_translated_to_FK_comparison();
+
+            Assert.Equal(
+                @"SELECT [e2].[Id]
+FROM [Level2] AS [e2]
+WHERE [e2].[OneToOne_Optional_PK_InverseId] = 1", Sql);
+        }
+
         public override void Join_navigation_in_outer_selector_translated_to_extra_join()
         {
             base.Join_navigation_in_outer_selector_translated_to_extra_join();
@@ -344,6 +355,51 @@ ORDER BY [l0].[Id], [l0].[Id0]",
 
                 var result = query.ToList();
             }
+
+            Assert.Equal(
+                @"",
+                Sql);
+        }
+
+        public override void Select_nav_prop_reference_optional()
+        {
+            base.Select_nav_prop_reference_optional();
+
+            Assert.Equal(
+                @"",
+                Sql);
+        }
+
+        public override void Where_nav_prop_reference_optional1()
+        {
+            base.Where_nav_prop_reference_optional1();
+
+            Assert.Equal(
+                @"",
+                Sql);
+        }
+
+        public override void Where_nav_prop_reference_optional2()
+        {
+            base.Where_nav_prop_reference_optional2();
+
+            Assert.Equal(
+                @"",
+                Sql);
+        }
+
+        public override void OrderBy_nav_prop_reference_optional()
+        {
+            base.OrderBy_nav_prop_reference_optional();
+
+            Assert.Equal(
+                @"",
+                Sql);
+        }
+
+        public override void Result_operator_nav_prop_reference_optional()
+        {
+            base.Result_operator_nav_prop_reference_optional();
 
             Assert.Equal(
                 @"",

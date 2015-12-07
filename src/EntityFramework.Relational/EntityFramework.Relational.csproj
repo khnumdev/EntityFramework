@@ -111,9 +111,11 @@
     <Compile Include="Query\ExpressionVisitors\Internal\IncludeExpressionVisitorFactory.cs" />
     <Compile Include="Query\ExpressionVisitors\Internal\IQueryFlattenerFactory.cs" />
     <Compile Include="Query\ExpressionVisitors\Internal\IShaper.cs" />
+    <Compile Include="Query\ExpressionVisitors\Internal\RelationalNavigationRewritingExpressionVisitorFactory.cs" />
     <Compile Include="Query\ExpressionVisitors\Internal\UnbufferedOffsetEntityShaper.cs" />
     <Compile Include="Query\ExpressionVisitors\ISqlTranslatingExpressionVisitorFactory.cs" />
     <Compile Include="Query\ExpressionVisitors\Internal\QueryFlattenerFactory.cs" />
+    <Compile Include="Query\ExpressionVisitors\Internal\RelationalNavigationRewritingExpressionVisitor.cs" />
     <Compile Include="Query\ExpressionVisitors\RelationalProjectionExpressionVisitorFactory.cs" />
     <Compile Include="Query\ExpressionVisitors\RelationalEntityQueryableExpressionVisitorFactory.cs" />
     <Compile Include="Query\ExpressionVisitors\Internal\Shaper.cs" />

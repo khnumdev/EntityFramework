@@ -140,7 +140,6 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddScoped<ITaskBlockingExpressionVisitor, TaskBlockingExpressionVisitor>()
                 .AddScoped<IEntityResultFindingExpressionVisitorFactory, EntityResultFindingExpressionVisitorFactory>()
                 .AddScoped<IMemberAccessBindingExpressionVisitorFactory, MemberAccessBindingExpressionVisitorFactory>()
-                .AddScoped<INavigationRewritingExpressionVisitorFactory, NavigationRewritingExpressionVisitorFactory>()
                 .AddScoped<IOrderingExpressionVisitorFactory, OrderingExpressionVisitorFactory>()
                 .AddScoped<IQuerySourceTracingExpressionVisitorFactory, QuerySourceTracingExpressionVisitorFactory>()
                 .AddScoped<IRequiresMaterializationExpressionVisitorFactory, RequiresMaterializationExpressionVisitorFactory>()
@@ -149,6 +148,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddScoped<ResultOperatorHandler>()
                 .AddScoped<QueryCompilationContextFactory>()
                 .AddScoped<ProjectionExpressionVisitorFactory>()
+                .AddScoped<NavigationRewritingExpressionVisitorFactory>()
                 .AddScoped(p => GetProviderServices(p).QueryContextFactory)
                 .AddScoped(p => GetProviderServices(p).QueryCompilationContextFactory)
                 .AddScoped(p => GetProviderServices(p).CompiledQueryCacheKeyGenerator)
@@ -156,7 +156,8 @@ namespace Microsoft.Extensions.DependencyInjection
                 .AddScoped(p => GetProviderServices(p).EntityQueryableExpressionVisitorFactory)
                 .AddScoped(p => GetProviderServices(p).ExpressionPrinter)
                 .AddScoped(p => GetProviderServices(p).ResultOperatorHandler)
-                .AddScoped(p => GetProviderServices(p).ProjectionExpressionVisitorFactory);
+                .AddScoped(p => GetProviderServices(p).ProjectionExpressionVisitorFactory)
+                .AddScoped(p => GetProviderServices(p).NavigationRewritingExpressionVisitorFactory);
         }
 
         private static IDbContextServices GetContextServices(IServiceProvider serviceProvider)

@@ -685,6 +685,7 @@ namespace Microsoft.Data.Entity.FunctionalTests
             }
         }
 
+        // issue #3235
         //[Fact]
         public virtual void Collection_with_inheritance_and_join_include_joined()
         {
@@ -698,6 +699,7 @@ namespace Microsoft.Data.Entity.FunctionalTests
             }
         }
 
+        // issue #3235
         //[Fact]
         public virtual void Collection_with_inheritance_and_join_include_source()
         {
@@ -710,6 +712,7 @@ namespace Microsoft.Data.Entity.FunctionalTests
                 var result = query.ToList();
             }
         }
+
 
         protected GearsOfWarContext CreateContext() => Fixture.CreateContext(TestStore);
 

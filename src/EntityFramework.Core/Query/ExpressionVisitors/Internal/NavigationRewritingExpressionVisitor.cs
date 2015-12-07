@@ -22,10 +22,8 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
 {
     public class NavigationRewritingExpressionVisitor : RelinqExpressionVisitor
     {
-        private readonly EntityQueryModelVisitor _queryModelVisitor;
         private readonly List<NavigationJoin> _navigationJoins = new List<NavigationJoin>();
         private readonly NavigationRewritingQueryModelVisitor _navigationRewritingQueryModelVisitor;
-        private readonly NavigationRewritingExpressionVisitor _parentvisitor;
 
         private QueryModel _queryModel;
 
@@ -75,23 +73,27 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
                 => RemoveNavigationJoin(NavigationJoins, navigationJoin);
         }
 
-        private IAsyncQueryProvider _entityQueryProvider;
-
         public NavigationRewritingExpressionVisitor([NotNull] EntityQueryModelVisitor queryModelVisitor)
         {
             Check.NotNull(queryModelVisitor, nameof(queryModelVisitor));
 
-            _queryModelVisitor = queryModelVisitor;
-            _navigationRewritingQueryModelVisitor = new NavigationRewritingQueryModelVisitor(this, _queryModelVisitor);
+            QueryModelVisitor = queryModelVisitor;
+            _navigationRewritingQueryModelVisitor = new NavigationRewritingQueryModelVisitor(this, QueryModelVisitor);
         }
 
         private NavigationRewritingExpressionVisitor(
             EntityQueryModelVisitor queryModelVisitor, IAsyncQueryProvider entityQueryProvider, NavigationRewritingExpressionVisitor parentvisitor)
             : this(queryModelVisitor)
         {
-            _entityQueryProvider = entityQueryProvider;
-            _parentvisitor = parentvisitor;
+            QueryProvider = entityQueryProvider;
+            ParentVisitor = parentvisitor;
         }
+
+        protected virtual EntityQueryModelVisitor QueryModelVisitor { get; [param: NotNull] set; }
+
+        protected virtual IAsyncQueryProvider QueryProvider { get; [param: NotNull] set; }
+
+        protected virtual NavigationRewritingExpressionVisitor ParentVisitor { get; [param: NotNull] set; }
 
         public virtual void Rewrite([NotNull] QueryModel queryModel)
         {
@@ -118,7 +120,7 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
 
             if (_queryModel.MainFromClause == navigationJoin.QuerySource 
                 || insertionIndex > 0 
-                || _parentvisitor == null)
+                || ParentVisitor == null)
             {
                 foreach (var nj in navigationJoin.Iterate())
                 {
@@ -127,7 +129,7 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
             }
             else
             {
-                _parentvisitor.InsertNavigationJoin(navigationJoin);
+                ParentVisitor.InsertNavigationJoin(navigationJoin);
             }
         }
 
@@ -142,9 +144,9 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
 
         protected override Expression VisitConstant(ConstantExpression node)
         {
-            if (_entityQueryProvider == null)
+            if (QueryProvider == null)
             {
-                _entityQueryProvider
+                QueryProvider
                     = (node.Value as IQueryable)?.Provider as IAsyncQueryProvider;
             }
 
@@ -244,7 +246,7 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
             Check.NotNull(node, nameof(node));
 
             return
-                _queryModelVisitor.BindNavigationPathMemberExpression(
+                QueryModelVisitor.BindNavigationPathMemberExpression(
                     node,
                     (ps, qs) =>
                         {
@@ -253,14 +255,10 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
 
                             if (navigations.Any())
                             {
-                                if ((navigations.Count == 1)
-                                    && navigations[0].IsDependentToPrincipal())
+                                var optimizedNavigationPropertyExpression = TryOptimizeNavigation(node, navigations);
+                                if (optimizedNavigationPropertyExpression != null)
                                 {
-                                    var foreignKeyMemberAccess = CreateForeignKeyMemberAccess(node, navigations[0]);
-                                    if (foreignKeyMemberAccess != null)
-                                    {
-                                        return foreignKeyMemberAccess;
-                                    }
+                                    return optimizedNavigationPropertyExpression;
                                 }
 
                                 var outerQuerySourceReferenceExpression = new QuerySourceReferenceExpression(qs);
@@ -285,25 +283,9 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
                 ?? base.VisitMember(node);
         }
 
-        private static Expression CreateForeignKeyMemberAccess(MemberExpression memberExpression, INavigation navigation)
+        protected virtual Expression TryOptimizeNavigation([NotNull] MemberExpression memberExpression, [NotNull] IList<INavigation> navigations)
         {
-            var principalKey = navigation.ForeignKey.PrincipalKey;
-            if (principalKey.Properties.Count == 1)
-            {
-                var principalKeyProperty = principalKey.Properties[0];
-                if (principalKeyProperty.Name == memberExpression.Member.Name)
-                {
-                    Debug.Assert(navigation.ForeignKey.Properties.Count == 1);
-
-                    var declaringExpression = ((MemberExpression)memberExpression.Expression).Expression;
-                    var foreignKeyPropertyExpression = CreateKeyAccessExpression(declaringExpression, navigation.ForeignKey.Properties);
-
-                    return foreignKeyPropertyExpression.Type != principalKeyProperty.ClrType
-                        ? Expression.Convert(foreignKeyPropertyExpression, principalKeyProperty.ClrType)
-                        : foreignKeyPropertyExpression;
-                }
-            }
-
+            // template method for provider specific optimizations
             return null;
         }
 
@@ -364,7 +346,7 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
         }
 
         public virtual NavigationRewritingExpressionVisitor CreateVisitorForSubQuery()
-            => new NavigationRewritingExpressionVisitor(_queryModelVisitor, _entityQueryProvider, this);
+            => new NavigationRewritingExpressionVisitor(QueryModelVisitor, QueryProvider, this);
 
         private static BinaryExpression CreateKeyComparisonExpression(Expression leftExpression, Expression rightExpression)
         {
@@ -457,10 +439,20 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
 
                     if (innerKeySelector.Type != joinClause.OuterKeySelector.Type)
                     {
-                        innerKeySelector
-                            = Expression.Convert(
-                                innerKeySelector,
-                                joinClause.OuterKeySelector.Type);
+                        if (innerKeySelector.Type.IsNullableType())
+                        {
+                            joinClause.OuterKeySelector
+                                = Expression.Convert(
+                                    joinClause.OuterKeySelector,
+                                    innerKeySelector.Type);
+                        }
+                        else
+                        {
+                            innerKeySelector
+                                = Expression.Convert(
+                                    innerKeySelector,
+                                    joinClause.OuterKeySelector.Type);
+                        }
                     }
 
                     joinClause.InnerKeySelector = innerKeySelector;
@@ -481,8 +473,11 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
             return querySourceReferenceExpression;
         }
 
-        private static Expression CreateKeyAccessExpression(Expression target, IReadOnlyList<IProperty> properties)
+        protected static Expression CreateKeyAccessExpression([NotNull] Expression target, [NotNull] IReadOnlyList<IProperty> properties)
         {
+            Check.NotNull(target, nameof(target));
+            Check.NotNull(properties, nameof(properties));
+
             return properties.Count == 1
                 ? CreatePropertyExpression(target, properties[0])
                 : Expression.New(
@@ -537,7 +532,7 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
                     .MakeGenericMethod(targetEntityType.ClrType)
                     .Invoke(null, new object[]
                     {
-                        _entityQueryProvider
+                        QueryProvider
                     }));
 
         private static readonly MethodInfo _createEntityQueryableMethod

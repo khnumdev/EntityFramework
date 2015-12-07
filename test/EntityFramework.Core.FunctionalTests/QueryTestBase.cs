@@ -247,6 +247,7 @@ namespace Microsoft.Data.Entity.FunctionalTests
                 cs => cs.Any(c => c.ContactName.StartsWith("A")));
         }
 
+        // issue #3317
         //[Fact]
         public virtual void Any_nested_negated()
         {

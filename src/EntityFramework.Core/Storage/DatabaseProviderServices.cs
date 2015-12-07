@@ -115,6 +115,14 @@ namespace Microsoft.Data.Entity.Storage
         public virtual IProjectionExpressionVisitorFactory ProjectionExpressionVisitorFactory => GetService<ProjectionExpressionVisitorFactory>();
 
         /// <summary>
+        ///     Gets the <see cref="INavigationRewritingExpressionVisitorFactory" /> for the database provider. By default, EF will register a default
+        ///     implementation
+        ///     (<see cref="Microsoft.Data.Entity.Query.ExpressionVisitors.Internal.NavigationRewritingExpressionVisitorFactory" />) which provides basic functionality but can be
+        ///     overridden if needed.
+        /// </summary>
+        public virtual INavigationRewritingExpressionVisitorFactory NavigationRewritingExpressionVisitorFactory => GetService<NavigationRewritingExpressionVisitorFactory>();
+
+        /// <summary>
         ///     Gets the <see cref="IDatabase" /> for the database provider.
         /// </summary>
         public abstract IDatabase Database { get; }

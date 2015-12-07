@@ -9,6 +9,7 @@ using Microsoft.Data.Entity.Migrations;
 using Microsoft.Data.Entity.Query;
 using Microsoft.Data.Entity.Query.ExpressionTranslators;
 using Microsoft.Data.Entity.Query.ExpressionVisitors;
+using Microsoft.Data.Entity.Query.ExpressionVisitors.Internal;
 using Microsoft.Data.Entity.Query.Internal;
 using Microsoft.Data.Entity.Query.Sql;
 using Microsoft.Data.Entity.Update;
@@ -36,6 +37,7 @@ namespace Microsoft.Data.Entity.Storage
         public override IEntityQueryableExpressionVisitorFactory EntityQueryableExpressionVisitorFactory => GetService<RelationalEntityQueryableExpressionVisitorFactory>();
         public override IEntityQueryModelVisitorFactory EntityQueryModelVisitorFactory => GetService<RelationalQueryModelVisitorFactory>();
         public override IProjectionExpressionVisitorFactory ProjectionExpressionVisitorFactory => GetService<RelationalProjectionExpressionVisitorFactory>();
+        public override INavigationRewritingExpressionVisitorFactory NavigationRewritingExpressionVisitorFactory => GetService<RelationalNavigationRewritingExpressionVisitorFactory>();
 
         public virtual IRelationalTypeMapper TypeMapper => GetService<RelationalTypeMapper>();
         public virtual IMigrationsAnnotationProvider MigrationsAnnotationProvider => GetService<MigrationsAnnotationProvider>();

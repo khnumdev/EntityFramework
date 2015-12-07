@@ -51,6 +51,7 @@ namespace Microsoft.Data.Entity.Infrastructure
                     .AddScoped<BatchExecutor>()
                     .AddScoped<MigrationsModelDiffer>()
                     .AddScoped<RelationalValueGeneratorSelector>()
+                    .AddScoped<RelationalNavigationRewritingExpressionVisitorFactory>()
                     .AddScoped<IRelationalCommandBuilderFactory, RelationalCommandBuilderFactory>()
                     .AddScoped<IRawSqlCommandBuilder, RawSqlCommandBuilder>()
                     .AddScoped<CommandBatchPreparer>()
@@ -94,6 +95,7 @@ namespace Microsoft.Data.Entity.Infrastructure
                 .AddScoped<RelationalEntityQueryableExpressionVisitorFactory>()
                 .AddScoped<RelationalQueryModelVisitorFactory>()
                 .AddScoped<RelationalProjectionExpressionVisitorFactory>()
+                .AddScoped<RelationalNavigationRewritingExpressionVisitorFactory>()
                 .AddScoped<RelationalCompiledQueryCacheKeyGenerator>()
                 .AddScoped<RelationalCompositeExpressionFragmentTranslator>()
                 .AddScoped(p => GetProviderServices(p).QuerySqlGeneratorFactory);

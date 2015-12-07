@@ -107,5 +107,10 @@ namespace Microsoft.Data.Entity.Storage
         ///     Gets the <see cref="IProjectionExpressionVisitorFactory" /> for the database provider.
         /// </summary>
         IProjectionExpressionVisitorFactory ProjectionExpressionVisitorFactory { get; }
+
+        /// <summary>
+        ///     Gets the <see cref="INavigationRewritingExpressionVisitorFactory" /> for the database provider.
+        /// </summary>
+        INavigationRewritingExpressionVisitorFactory NavigationRewritingExpressionVisitorFactory { get; }
     }
 }
