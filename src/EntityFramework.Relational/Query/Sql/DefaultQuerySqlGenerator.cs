@@ -870,7 +870,8 @@ namespace Microsoft.Data.Entity.Query.Sql
                 }
 
                 if (expression.IsLogicalOperation()
-                    && expression.Left.IsSimpleExpression())
+                    && (expression.Left.IsSimpleExpression()
+                        || expression.Left is SelectExpression))
                 {
                     _relationalCommandBuilder.Append(" = ");
                     _relationalCommandBuilder.Append(TrueLiteral);
@@ -908,7 +909,8 @@ namespace Microsoft.Data.Entity.Query.Sql
                 }
 
                 if (expression.IsLogicalOperation()
-                    && expression.Right.IsSimpleExpression())
+                    && (expression.Right.IsSimpleExpression()
+                        || expression.Right is SelectExpression))
                 {
                     _relationalCommandBuilder.Append(" = ");
                     _relationalCommandBuilder.Append(TrueLiteral);
