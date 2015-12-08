@@ -407,13 +407,13 @@ namespace Microsoft.Data.Entity.Query.ExpressionVisitors.Internal
                         = new QuerySourceReferenceExpression(_queryModel.MainFromClause);
 
                     var leftKeyAccess = CreateKeyAccessExpression(
-                                    innerQuerySourceReferenceExpression,
+                        querySourceReferenceExpression,
                         navigation.IsDependentToPrincipal()
                             ? navigation.ForeignKey.Properties
                             : navigation.ForeignKey.PrincipalKey.Properties);
 
                     var rightKeyAccess = CreateKeyAccessExpression(
-                                    querySourceReferenceExpression,
+                        innerQuerySourceReferenceExpression,
                         navigation.IsDependentToPrincipal()
                             ? navigation.ForeignKey.PrincipalKey.Properties
                             : navigation.ForeignKey.Properties);

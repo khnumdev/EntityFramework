@@ -11,7 +11,7 @@ using Microsoft.Data.Entity.Query.Internal;
 using Microsoft.Data.Entity.Tests;
 using Xunit;
 // ReSharper disable ReplaceWithSingleCallToCount
-
+// ReSharper disable StringStartsWithIsCultureSpecific
 // ReSharper disable AccessToModifiedClosure
 
 namespace Microsoft.Data.Entity.FunctionalTests
@@ -270,16 +270,50 @@ namespace Microsoft.Data.Entity.FunctionalTests
                 cs => cs.Any(c => c.ContactName.StartsWith("A")));
         }
 
-        //[Fact]
+        [Fact]
         public virtual void Any_nested_negated()
         {
-            using (var context = CreateContext())
-            {
-                var query = context.Customers.Where(c => !c.Orders.Any(o => o.CustomerID.StartsWith("A")));
-                var result = query.ToList();
+            AssertQuery<Customer, Order>(
+                (cs, os) => cs.Where(c => !os.Any(o => o.CustomerID.StartsWith("A"))));
+        }
 
-                Assert.Equal(4, result.Count);
-            }
+        [Fact]
+        public virtual void Any_nested_negated2()
+        {
+            AssertQuery<Customer, Order>(
+                (cs, os) => cs.Where(c => c.City != "London"
+                                          && !os.Any(o => o.CustomerID.StartsWith("A"))));
+        }
+
+        [Fact]
+        public virtual void Any_nested_negated3()
+        {
+            AssertQuery<Customer, Order>(
+                (cs, os) => cs.Where(c => !os.Any(o => o.CustomerID.StartsWith("A"))
+                                          && c.City != "London"));
+        }
+
+        [Fact]
+        public virtual void Any_nested()
+        {
+            AssertQuery<Customer, Order>(
+                (cs, os) => cs.Where(c => os.Any(o => o.CustomerID.StartsWith("A"))));
+        }
+
+        [Fact]
+        public virtual void Any_nested2()
+        {
+            AssertQuery<Customer, Order>(
+                (cs, os) => cs.Where(c => c.City != "London"
+                                          && os.Any(o => o.CustomerID.StartsWith("A"))));
+        }
+
+        [Fact]
+        public virtual void Any_nested3()
+        {
+            AssertQuery<Customer, Order>(
+                (cs, os) => cs.Where(c => os.Any(o => o.CustomerID.StartsWith("A"))
+                                          && c.City != "London"));
         }
 
         [Fact]

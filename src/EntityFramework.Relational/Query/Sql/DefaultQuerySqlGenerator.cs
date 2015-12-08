@@ -1013,46 +1013,51 @@ namespace Microsoft.Data.Entity.Query.Sql
         {
             Check.NotNull(expression, nameof(expression));
 
-            if (expression.NodeType == ExpressionType.Not)
+            switch (expression.NodeType)
             {
-                var inExpression = expression.Operand as InExpression;
-                if (inExpression != null)
+                case ExpressionType.Not:
                 {
-                    return VisitNotIn(inExpression);
+                    var inExpression = expression.Operand as InExpression;
+
+                    if (inExpression != null)
+                    {
+                        return VisitNotIn(inExpression);
+                    }
+
+                    var isNullExpression = expression.Operand as IsNullExpression;
+
+                    if (isNullExpression != null)
+                    {
+                        return VisitIsNotNull(isNullExpression);
+                    }
+
+                    if (!(expression.Operand is ColumnExpression
+                          || expression.Operand is ParameterExpression
+                          || expression.Operand.IsAliasWithColumnExpression()
+                          || expression.Operand is SelectExpression))
+                    {
+                        _relationalCommandBuilder.Append("NOT (");
+
+                        Visit(expression.Operand);
+
+                        _relationalCommandBuilder.Append(")");
+                    }
+                    else
+                    {
+                        Visit(expression.Operand);
+
+                        _relationalCommandBuilder.Append(" = ");
+                        _relationalCommandBuilder.Append(FalseLiteral);
+                    }
+
+                    return expression;
                 }
-
-                var isNullExpression = expression.Operand as IsNullExpression;
-                if (isNullExpression != null)
+                case ExpressionType.Convert:
                 {
-                    return VisitIsNotNull(isNullExpression);
-                }
-
-                var isColumnOrParameterOperand =
-                    expression.Operand is ColumnExpression
-                    || expression.Operand is ParameterExpression
-                    || expression.Operand.IsAliasWithColumnExpression();
-
-                if (!isColumnOrParameterOperand)
-                {
-                    _relationalCommandBuilder.Append("NOT (");
                     Visit(expression.Operand);
-                    _relationalCommandBuilder.Append(")");
+
+                    return expression;
                 }
-                else
-                {
-                    Visit(expression.Operand);
-                    _relationalCommandBuilder.Append(" = ");
-                    _relationalCommandBuilder.Append(FalseLiteral);
-                }
-
-                return expression;
-            }
-
-            if (expression.NodeType == ExpressionType.Convert)
-            {
-                Visit(expression.Operand);
-
-                return expression;
             }
 
             return base.VisitUnary(expression);
