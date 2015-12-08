@@ -293,7 +293,7 @@ namespace Microsoft.Data.Entity.Metadata.Conventions.Internal
 
         public virtual bool Apply(InternalEntityTypeBuilder entityTypeBuilder, EntityType oldBaseType)
         {
-            var oldBaseTypeBuilder = oldBaseType?.Builder;
+            var oldBaseTypeBuilder = oldBaseType != null ? entityTypeBuilder.ModelBuilder.Entity(oldBaseType.Name, ConfigurationSource.Convention) : null;
             if (oldBaseTypeBuilder != null)
             {
                 ApplyOnRelatedEntityTypes(entityTypeBuilder.ModelBuilder, oldBaseTypeBuilder.Metadata);
@@ -313,7 +313,7 @@ namespace Microsoft.Data.Entity.Metadata.Conventions.Internal
 
             foreach (var relatedEntityType in relatedEntityTypes)
             {
-                var relatedEntityTypeBuilder = modelBuilder.Entity(relatedEntityType.Name, ConfigurationSource.Convention);
+                var relatedEntityTypeBuilder = relatedEntityType.Builder;
                 Apply(relatedEntityTypeBuilder);
             }
         }
